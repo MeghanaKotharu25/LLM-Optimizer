@@ -8,12 +8,12 @@ We benchmarked GPT-2 using three strategies:
 - Dynamic Quantization (ONNX Runtime
 
   Results
-| Model            | Latency (s) | Size (MB) | Perplexity |
-|------------------|-------------|-----------|-------------|
-| Base             | 0.0300      | 474.70    | 22.79       |
-| Pruned-10%       | 0.0275      | 474.70    | 23.09       |
-| Pruned-20%       | 0.0323      | 474.70    | 24.27       |
-| Quantized-ONNX   | 0.0057      | 156.47    | 238.75      |
+| Model           | Latency (s) | Size (MB) | Perplexity |
+|----------------|-------------:|----------:|------------:|
+| Base           | 0.03         | 474.7     | 22.79       |
+| Pruned-10%     | 0.0275       | 474.7     | 23.09       |
+| Pruned-20%     | 0.0323       | 474.7     | 24.27       |
+| Quantized-ONNX | 0.0057       | 156.47    | 238.75      |
 
 Key Insight
 
