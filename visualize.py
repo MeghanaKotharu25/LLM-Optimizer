@@ -94,3 +94,26 @@ print("Saved:")
 print("- latency_comparison.png")
 print("- perplexity_comparison.png")
 print("- tradeoff_plot.png")
+
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Read the results file
+df = pd.read_csv('results.csv')
+
+# Create the visualization
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df, x='Latency(s)', y='Perplexity', hue='Model', style='Model', s=100)
+plt.title('Optimization Pareto Frontier: Latency vs. Perplexity')
+plt.xlabel('Latency (s) [Lower is Better]')
+plt.ylabel('Perplexity [Lower is Better]')
+plt.grid(True)
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+
+# Save the plot
+plt.savefig('tradeoff_plot.png')
+print("Plot saved as tradeoff_plot.png")
