@@ -6,9 +6,9 @@ This project is an automated inference orchestration engine. Instead of manually
 
 ---
 
-## 🚀 The "Dangerous" Architecture
+## 🚀 The Architecture
 
-Most inference projects are static scripts. This is a **Self-Optimizing Runtime**:
+This is a **Self-Optimizing Runtime**:
 
 1.  **Cold-Start Calibration:** Profiles CPU/Memory bandwidth at runtime to understand the specific environment's performance profile.
 2.  **Learned Policy Engine:** Uses a **Random Forest Regressor** trained on historical benchmark data to predict inference latency across a multi-dimensional search space (Pruning Ratios, Quantization, Model Size).
