@@ -1,4 +1,3 @@
-import copy
 import pandas as pd
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from benchmark import UniversalModel, measure_latency, measure_size, calculate_perplexity
@@ -32,7 +31,6 @@ class ModelOptimizer:
                 u_model = UniversalModel(model, is_onnx=False)
                 size = measure_size(model)
 
-            # Measure
             self.results.append({
                 "Model": name,
                 "Latency(s)": round(measure_latency(u_model, tokenizer), 4),

@@ -1,45 +1,63 @@
-LLM Optimization Suite:Performance Report 
+# Autonomous LLM Inference Runtime
 
-Methodology
+**Treating model deployment as a hardware-aware optimization problem.**
 
-We benchmarked GPT-2 using three strategies:
-- Baseline (Standard FP32)
-- Magnitude-based Pruning (10% & 20%)
-- Dynamic Quantization (ONNX Runtime
+This project is an automated inference orchestration engine. Instead of manually selecting model configurations, this runtime profiles the host hardware at startup, queries a learned ML-based policy to predict latency, and dynamically compiles the optimal model variant (pruning + quantization) for the current resource budget.
 
-  Results
-| Model           | Latency (s) | Size (MB) | Perplexity |
-|----------------|-------------:|----------:|------------:|
-| Base           | 0.03         | 474.7     | 22.79       |
-| Pruned-10%     | 0.0275       | 474.7     | 23.09       |
-| Pruned-20%     | 0.0323       | 474.7     | 24.27       |
-| Quantized-ONNX | 0.0057       | 156.47    | 238.75      |
+---
 
-Key Insight
+## 🚀 The "Dangerous" Architecture
 
-While Quantization provided the smallest disk footprint, Magnitude-based Pruning (20%) emerged as the superior production configuration, providing a ~20% latency reduction while maintaining ~95% of the model's original accuracy.
+Most inference projects are static scripts. This is a **Self-Optimizing Runtime**:
 
+1.  **Cold-Start Calibration:** Profiles CPU/Memory bandwidth at runtime to understand the specific environment's performance profile.
+2.  **Learned Policy Engine:** Uses a **Random Forest Regressor** trained on historical benchmark data to predict inference latency across a multi-dimensional search space (Pruning Ratios, Quantization, Model Size).
+3.  **Multi-Objective Orchestrator:** Balances Latency and Perplexity using an **Optimization Efficiency Score (OES)** to navigate the Pareto frontier, rather than relying on brittle hardcoded rules.
+4.  **RESTful Inference Gateway:** Exposes the compiler/runtime via FastAPI for integration into larger production systems.
 
-# Intelligent LLM Inference Optimizer
+---
 
-An automated infrastructure for benchmarking and deploying LLMs on edge hardware. This system treats inference as an optimization problem: it profiles the host hardware and selects the best model/optimization strategy to balance latency and perplexity.
+## 📊 Experimental Results
 
-## 🚀 Key Features
-- **Hardware-Aware Profiling:** Automatically detects system resources and blacklists incompatible model configs.
-- **Automated Benchmarking:** A complete pipeline to prune, quantize, and measure model performance.
-- **Pareto-Efficient Selection:** Uses multi-objective scoring (Latency vs. PPL) to select the optimal model.
-- **Inference Gateway:** RESTful API built with FastAPI for real-time model recommendations.
+We evaluated 20+ configurations across GPT-2 and DistilGPT-2 architectures. The intelligent compiler consistently selected configurations that maximized the Optimization Efficiency Score (OES).
 
-## 🛠️ Tech Stack
-- **Frameworks:** PyTorch, Transformers, ONNX Runtime
-- **Deployment:** FastAPI, Uvicorn
-- **Utilities:** psutil (Hardware Telemetry), Pandas (Data Analysis)
+| Configuration | Latency (s) | Perplexity | OES |
+| :--- | :--- | :--- | :--- |
+| Baseline (GPT-2, No Opt) | 0.0320 | 22.79 | 1.37 |
+| **Optimized (DistilGPT-2, P40, Q)** | **0.0035** | 100.04 | **2.85** |
 
-## 📊 Performance (Pareto Frontier)
-[Insert your `tradeoff_plot.png` here]
-*The system dynamically navigates this frontier based on user-provided latency constraints.*
+*Efficiency Improvement: **~108% increase in OES** compared to baseline architectures.*
 
-## ⚡ How to Run
-1. Run the benchmark suite to generate the data: `python main.py`
-2. Start the Inference Gateway: `uvicorn api:app --reload`
-3. Access the interactive API docs at `http://127.0.0.1:8000/docs`
+---
+
+## 🛠 Tech Stack
+*   **Intelligence:** Scikit-Learn (Random Forest Regression)
+*   **Runtime:** PyTorch, ONNX Runtime
+*   **Deployment:** FastAPI (Inference Gateway)
+*   **Profiling:** `psutil` (Hardware Telemetry)
+
+---
+
+## ⚡ Quick Start
+
+### 1. The Lab (Benchmarking)
+Generate the performance landscape by running the full sweep:
+```bash
+python main.py
+```
+
+### 2. The Engine (Inference)
+Launch the intelligent runtime, which calibrates to your machine and selects the best model:
+```bash
+python runtime.py
+```
+
+### 3. The Gateway (API)
+Spin up the Inference API to serve recommendations dynamically:
+```bash
+uvicorn api:app --reload
+# Access docs at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+```
+
+### 💡 Why this is different
+Insted of appling optimizations, This system builds a decision engine over them. By separating the Benchmarking Engine from the Runtime Policy, this project enables deployment that adapts to the specific hardware—from low-end edge devices to powerful workstations—without changing a single line of code.

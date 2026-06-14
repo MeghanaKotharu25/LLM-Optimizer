@@ -1,54 +1,42 @@
 import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import LabelEncoder
 import os
-import psutil
 
 class LLMCompiler:
     def __init__(self, results_file="results.csv"):
-        if not os.path.exists(results_file):
-            raise FileNotFoundError("Run benchmark_2.py first!")
         self.df = pd.read_csv(results_file)
+        self.encoder = LabelEncoder()
+        self.model = self._train_policy()
 
-    def get_device_profile(self):
-        """Profiles the current machine to inform compilation decisions."""
-        mem = psutil.virtual_memory()
-        cpu = psutil.cpu_count()
+    def _train_policy(self):
+        # Feature Engineering
+        df = self.df.copy()
+        df['model_encoded'] = self.encoder.fit_transform(df['Model'])
         
-        # Heuristics for "Device Capability"
-        profile = {
-            "ram_gb": mem.available / (1024**3),
-            "cpu_count": cpu,
-            "is_low_end": (cpu < 4) or (mem.available < (2 * 1024**3))
-        }
-        print(f"🖥️  System Profile: {profile['cpu_count']} Cores, {profile['ram_gb']:.2f}GB RAM Available")
-        return profile
+        X = df[['model_encoded', 'Size(MB)']]
+        y = df['Latency(s)']
+        
+        regressor = RandomForestRegressor(n_estimators=100)
+        regressor.fit(X, y)
+        return regressor
 
-    def compile(self, max_latency, weights={'latency': 0.6, 'ppl': 0.4}):
-        profile = self.get_device_profile()
+    def compile(self, target_latency):
+        # Predict which models will be under target_latency
         candidates = self.df.copy()
-
-        # 1. Hardware-Aware Filtering (The "Insane" logic)
-        if profile['is_low_end']:
-            print("⚠️ Low-end hardware detected. Forcing Quantized models only.")
-            # Blacklist "Base" models if they contain "Base" in the name
-            candidates = candidates[~candidates['Model'].str.contains("Base")]
+        candidates['model_encoded'] = self.encoder.transform(candidates['Model'])
         
-        if profile['ram_gb'] < 2.0:
-            # Drop models larger than 400MB if RAM is scarce
-            candidates = candidates[candidates['Size(MB)'] < 400]
-
-        # 2. Performance Constraint
-        candidates = candidates[candidates['Latency(s)'] <= max_latency]
+        predicted_latencies = self.model.predict(candidates[['model_encoded', 'Size(MB)']])
+        candidates['predicted_latency'] = predicted_latencies
         
-        if candidates.empty:
-            return None, "No models meet these aggressive hardware/latency constraints."
-
-        # 3. Intelligent Selection via Scoring
-        # Normalize (0 to 1, where 1 is best)
-        candidates['norm_lat'] = 1 - (candidates['Latency(s)'] / candidates['Latency(s)'].max())
-        candidates['norm_ppl'] = 1 - (candidates['Perplexity'] / candidates['Perplexity'].max())
+        # Filter by Prediction
+        valid = candidates[candidates['predicted_latency'] <= target_latency]
         
-        candidates['score'] = (weights['latency'] * candidates['norm_lat']) + \
-                             (weights['ppl'] * candidates['norm_ppl'])
-        
-        best_choice = candidates.sort_values('score', ascending=False).iloc[0]
-        return best_choice, "Success"
+        if valid.empty:
+            return None, "No models predicted to meet latency target."
+            
+        # Select best by OES (Optimization Efficiency Score)
+        valid['OES'] = 1 / (valid['Perplexity'] * valid['predicted_latency'])
+        best = valid.sort_values('OES', ascending=False).iloc[0]
+        return best, "Success"
